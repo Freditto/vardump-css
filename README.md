@@ -23,7 +23,7 @@
 
 ## Get It
 
-[![Get VarDump.css for $2](https://img.shields.io/badge/Get_VarDump.css-$2-7c3aed?style=for-the-badge)](https://gumroad.com/l/vardump-css)
+[![Get VarDump.css for $2](https://img.shields.io/badge/Get_VarDump.css-$2-7c3aed?style=for-the-badge)](https://freditto.gumroad.com/l/vardump-css)
 
 ---
 
