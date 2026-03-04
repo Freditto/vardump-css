@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VarDump.css — Paste messy CSS. Get clean variables.</title>
+  <meta name="description" content="Extract, inspect, rename, and export CSS custom properties from any stylesheet. Single HTML file. Works offline. No install.">
+  <style>
+    /* --- Reset & Base --- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #06060a;
+      --bg-panel: #12121e;
+      --bg-card: #181828;
+      --border-subtle: rgba(124, 58, 237, 0.12);
+      --border-mid: rgba(124, 58, 237, 0.25);
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --accent-secondary: #06b6d4;
+      --success: #10b981;
+      --text-primary: #f0eef6;
+      --text-secondary: #9994b8;
+      --text-dim: #5e587a;
+      --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* --- Background --- */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .bg-mesh .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.25;
+      animation: orbFloat 25s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+      top: -300px; left: -200px;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 70%);
+      bottom: -200px; right: -150px;
+      animation-delay: -12s;
+      animation-duration: 30s;
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, var(--accent-light) 0%, transparent 70%);
+      top: 40%; left: 60%;
+      opacity: 0.12;
+      animation-delay: -7s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(50px, -30px) scale(1.08); }
+      50% { transform: translate(-20px, 40px) scale(0.95); }
+      75% { transform: translate(30px, 15px) scale(1.04); }
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(124, 58, 237, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124, 58, 237, 0.025) 1px, transparent 1px);
+      background-size: 70px 70px;
+    }
+
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+    }
+
+    /* --- Container --- */
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --- Nav --- */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0;
+      animation: slideDown 0.7s ease both;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: white;
+      font-family: var(--font-mono);
+      box-shadow: 0 0 25px rgba(124, 58, 237, 0.35);
+    }
+
+    .nav-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 22px;
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid var(--border-mid);
+      border-radius: 10px;
+      color: var(--accent-light);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .nav-cta:hover {
+      background: rgba(124, 58, 237, 0.2);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    /* --- Hero --- */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+      animation: slideUp 0.8s ease 0.1s both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 30px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent-light);
+      margin-bottom: 28px;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.7); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent-light), var(--accent), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.12) 50%, transparent 60%);
+      transform: translateX(-100%);
+      transition: transform 0.7s ease;
+    }
+
+    .btn-hero:hover::after {
+      transform: translateX(100%);
+    }
+
+    .btn-hero-primary {
+      background: linear-gradient(135deg, var(--accent), #6d28d9);
+      color: white;
+      box-shadow: 0 6px 30px rgba(124, 58, 237, 0.35);
+    }
+
+    .btn-hero-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 40px rgba(124, 58, 237, 0.5);
+    }
+
+    .btn-hero-ghost {
+      background: rgba(255,255,255, 0.03);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-hero-ghost:hover {
+      background: rgba(124, 58, 237, 0.08);
+      border-color: var(--border-mid);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+    }
+
+    .price-tag {
+      font-size: 0.78rem;
+      opacity: 0.7;
+    }
+
+    /* --- Demo Preview --- */
+    .demo-section {
+      padding: 40px 0 70px;
+      animation: slideUp 0.8s ease 0.25s both;
+    }
+
+    .demo-window {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(124, 58, 237, 0.08);
+    }
+
+    .demo-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .demo-dot {
+      width: 11px; height: 11px;
+      border-radius: 50%;
+    }
+    .demo-dot.red { background: #ff5f56; }
+    .demo-dot.yellow { background: #ffbd2e; }
+    .demo-dot.green { background: #27c93f; }
+
+    .demo-titlebar span {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .demo-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 320px;
+    }
+
+    .demo-left, .demo-right {
+      padding: 24px;
+    }
+
+    .demo-left {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .demo-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    .demo-code {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      line-height: 1.8;
+      color: var(--text-secondary);
+    }
+
+    .demo-code .kw { color: var(--accent-light); }
+    .demo-code .val { color: var(--accent-secondary); }
+    .demo-code .sel { color: var(--success); }
+    .demo-code .fn { color: #f59e0b; }
+
+    .demo-var-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .demo-var-row:hover {
+      border-color: var(--border-mid);
+      transform: translateX(3px);
+    }
+
+    .demo-swatch {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .demo-var-name {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--accent-light);
+      flex: 1;
+    }
+
+    .demo-var-badge {
+      font-size: 0.6rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: rgba(124, 58, 237, 0.1);
+      color: var(--accent-light);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      font-weight: 600;
+    }
+
+    .demo-var-badge.unused {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    /* --- Features --- */
+    .features {
+      padding: 40px 0 80px;
+      animation: slideUp 0.8s ease 0.35s both;
+    }
+
+    .features-label {
+      text-align: center;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      font-weight: 600;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 50px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .feature-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 30px 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-mid);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(124, 58, 237, 0.08);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 44px; height: 44px;
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 18px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* --- Trust Bar --- */
+    .trust-bar {
+      text-align: center;
+      padding: 30px 0 80px;
+      animation: slideUp 0.8s ease 0.4s both;
+    }
+
+    .trust-items {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    .trust-icon {
+      color: var(--success);
+      font-size: 1rem;
+    }
+
+    /* --- CTA Section --- */
+    .cta-section {
+      text-align: center;
+      padding: 70px 0;
+      border-top: 1px solid var(--border-subtle);
+      animation: slideUp 0.8s ease 0.45s both;
+    }
+
+    .cta-section h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .cta-section p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    /* --- Footer --- */
+    footer {
+      text-align: center;
+      padding: 30px 0 40px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    footer a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .hero { padding: 50px 0 40px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .demo-body { grid-template-columns: 1fr; }
+      .demo-left { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+      .trust-items { flex-direction: column; gap: 14px; }
+      .nav-cta { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <div class="bg-mesh">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-bg"></div>
+  <div class="noise-overlay"></div>
+
+  <div class="page">
+
+    <!-- Nav -->
+    <nav>
+      <a class="nav-logo" href="#">
+        <div class="nav-icon">{}</div>
+        <span class="nav-name">VarDump.css</span>
+      </a>
+      <a class="nav-cta" href="https://gumroad.com/l/vardump-css" target="_blank" rel="noopener">
+        Get it for $2 &rarr;
+      </a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="dot"></span>
+        Single HTML file &middot; Works offline
+      </div>
+      <h1>
+        Paste messy CSS.<br>
+        <span class="gradient">Get clean variables.</span>
+      </h1>
+      <p class="subtitle">
+        Extract, inspect, rename, and export CSS custom properties from any stylesheet. One file. Zero dependencies. Instant results.
+      </p>
+      <div class="hero-actions">
+        <a class="btn-hero btn-hero-primary" href="https://gumroad.com/l/vardump-css" target="_blank" rel="noopener">
+          Get VarDump.css <span class="price-tag">&mdash; $2</span>
+        </a>
+        <a class="btn-hero btn-hero-ghost" href="#demo">
+          See it in action &darr;
+        </a>
+      </div>
+    </section>
+
+    <!-- Demo Preview -->
+    <section class="demo-section" id="demo">
+      <div class="demo-window">
+        <div class="demo-titlebar">
+          <div class="demo-dot red"></div>
+          <div class="demo-dot yellow"></div>
+          <div class="demo-dot green"></div>
+          <span>vardump.html</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-left">
+            <div class="demo-label">Input CSS</div>
+            <div class="demo-code">
+              <span class="sel">:root</span> {<br>
+              &nbsp;&nbsp;<span class="kw">--primary-color</span>: <span class="val">#7c3aed</span>;<br>
+              &nbsp;&nbsp;<span class="kw">--font-size</span>: <span class="val">1rem</span>;<br>
+              &nbsp;&nbsp;<span class="kw">--spacing</span>: <span class="val">0.5rem</span>;<br>
+              &nbsp;&nbsp;<span class="kw">--unused-var</span>: <span class="val">hotpink</span>;<br>
+              }<br><br>
+              <span class="sel">.button</span> {<br>
+              &nbsp;&nbsp;background: <span class="fn">var</span>(<span class="kw">--primary-color</span>);<br>
+              &nbsp;&nbsp;font-size: <span class="fn">var</span>(<span class="kw">--font-size</span>);<br>
+              &nbsp;&nbsp;padding: <span class="fn">var</span>(<span class="kw">--spacing</span>);<br>
+              }
+            </div>
+          </div>
+          <div class="demo-right">
+            <div class="demo-label">Variables Found</div>
+            <div class="demo-var-row">
+              <div class="demo-swatch" style="background: #7c3aed;"></div>
+              <span class="demo-var-name">--primary-color</span>
+              <span class="demo-var-badge">3 uses</span>
+            </div>
+            <div class="demo-var-row">
+              <div class="demo-swatch" style="background: var(--bg-card);"></div>
+              <span class="demo-var-name">--font-size</span>
+              <span class="demo-var-badge">1 use</span>
+            </div>
+            <div class="demo-var-row">
+              <div class="demo-swatch" style="background: var(--bg-card);"></div>
+              <span class="demo-var-name">--spacing</span>
+              <span class="demo-var-badge">1 use</span>
+            </div>
+            <div class="demo-var-row">
+              <div class="demo-swatch" style="background: hotpink;"></div>
+              <span class="demo-var-name">--unused-var</span>
+              <span class="demo-var-badge unused">Unused</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <div class="features-label">What it does</div>
+      <h2>Everything you need. Nothing you don't.</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">&#128270;</div>
+          <h3>Extract & Inspect</h3>
+          <p>Paste any CSS and instantly see every custom property — its value, usage count, and color preview.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9998;</div>
+          <h3>Bulk Rename</h3>
+          <p>Click any variable name to rename it. All occurrences update live across the entire stylesheet.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128230;</div>
+          <h3>Export Clean</h3>
+          <p>Copy a clean <code>:root {}</code> block or the full updated CSS to your clipboard in one click.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#127912;</div>
+          <h3>Color Swatches</h3>
+          <p>Every color variable gets a live preview swatch. Click the swatch to copy the color value.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9888;&#65039;</div>
+          <h3>Unused Detection</h3>
+          <p>Instantly spot variables that are declared but never referenced — clean up your CSS with confidence.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#9889;</div>
+          <h3>Zero Dependencies</h3>
+          <p>Pure vanilla HTML + CSS + JS. No build step. No npm. No framework. Works 100% offline.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust Bar -->
+    <div class="trust-bar">
+      <div class="trust-items">
+        <div class="trust-item">
+          <span class="trust-icon">&#10003;</span>
+          Works offline
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">&#10003;</span>
+          No install required
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">&#10003;</span>
+          Single HTML file
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">&#10003;</span>
+          Instant results
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2>Stop digging through stylesheets.</h2>
+      <p>Get VarDump.css and manage your CSS variables like a pro.</p>
+      <a class="btn-hero btn-hero-primary" href="https://gumroad.com/l/vardump-css" target="_blank" rel="noopener">
+        Get it for $2 &rarr;
+      </a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      Made with care &middot; Dar es Salaam, Tanzania<br>
+      <a href="https://github.com">VarDump.css</a> &middot; &copy; 2026
+    </footer>
+
+  </div>
+
+</body>
+</html>

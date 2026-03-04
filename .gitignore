@@ -1,0 +1,9 @@
+# Product file — sold on Gumroad, never push to public repo
+vardump.html
+
+# Claude Code instructions
+CLAUDE.md
+HOW-TO-USE.md
+
+# macOS
+.DS_Store
